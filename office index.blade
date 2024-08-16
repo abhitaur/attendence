@@ -1,0 +1,908 @@
+@extends('layout.admin')
+@section('content')
+<div class=" w-full mt-5 ">
+    <div class="flex justify-between">
+        <div class="flex">
+            <span class="text-gray-700">Total Expenses of Month
+                <span class="font-bold" id="totalExpanceMonth"></span>
+                <span>:-</span>
+                <span class="font-bold" id="totalExpance"></span>
+            </span>
+        </div>
+
+        <form class="flex items-center gap-3 ">
+
+            <div class="">
+                <div class="relative w-full">
+                    <input type="month" name="month" placeholder="Select Month and Year" id="monthPiker" onchange="filter(this)" class="shadow-sm filterForm bg-white border border-gray-300 text-gray-900 text-xs 2xl:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full ">
+
+                </div>
+            </div>
+
+
+            <div class="relative w-full">
+                <select type="date" class="font-bold" name="expance_id" id="total_expance_type_filter" onchange="filter(this)" class="filterForm shadow-sm bg-white border border-gray-300 text-gray-900 text-xs 2xl:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full ">
+                    <option value="" class="font-bold">All Expenses</option>
+                    @foreach ($expance as $expances)
+                    <option value="{{ $expances->id ?? '' }}">{{ $expances->expance ?? '' }}
+                    </option>
+                    @endforeach
+                    <option value="delete_expenses" class="font-bold">
+                        <a href="{{route('review.DeletedExpanses')}}"> Delete Expenses</a>
+                    </option>
+                </select>
+            </div>
+
+            <div class="">
+                <div class="relative w-full">
+                    <input type="reset" id="filtersReset" class="text-white bg-rose-400 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-green-600 dark:hover:bg-green-700 ">
+                </div>
+            </div>
+
+
+            <div>
+                <a {{-- data-modal-target="office_expance" data-modal-toggle="office_expance"  --}} role="button" type="button" onclick="formModaleOpen()" class="text-white bg-rose-400 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-green-600 dark:hover:bg-green-700">
+                    Add
+                </a>
+            </div>  
+
+        </form>
+
+    </div>
+</div>
+
+<div class="flex">
+    <div style="width: 40%; margin: auto;">
+        <canvas id="barChart"></canvas>
+    </div>
+
+
+    <div style="width: 30%; margin: auto;">
+        <canvas id="pieChart"></canvas>
+    </div>
+</div>
+
+<div class="flex" style="margin-top: 100px;">
+    <div style="width: 45%;">
+        <canvas id="barChart3"></canvas>
+    </div>
+
+    <div style="width: 25%; margin: auto;">
+        <canvas id="pieChartPercentage"></canvas>
+    </div>
+</div>
+
+
+<div class=" w-full mt-5 ">
+    <div class="flex flex-col w-full bg-white border-gray-200 rounded-lg shadow-lg sm:rounded-lg border-2  dark:bg-gray-800 dark:border-gray-700">
+        <div class="flex p-4 justify-between">
+            <div>
+                <span class="font-extrabold text-lg">Expenses</span>
+            </div>
+            <div>
+
+            </div>
+        </div>
+        <div class="w-full ">
+            <div class="relative">
+                <table class="relative w-full text-sm text-left rtl:text-right text-gray-500  ">
+                    <thead class="text-xs text-black uppercase bg-slate-100   ">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">
+                                <span class="w-full">
+                                    Date
+                                </span>
+                            </th>
+                            <th scope="col" class="px-6 py-3">
+                                <span class="w-full">
+                                    Expenses Type
+                                </span>
+                            </th>
+                            <th scope="col" class="px-6 py-3">
+                                <span class="w-full">
+                                    Item
+                                </span>
+                            </th>
+                            <th scope="col" class="px-6 py-3">
+                                <span class="w-full">
+                                    Amount
+                                </span>
+                            </th>
+                            <th scope="col" class="px-6 py-3">
+                                <span class="flex justify-center w-full">
+                                    Action
+                                </span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableContant">
+                        <tr class="bg-white border-b  odd:bg-white  even:bg-slate-50 hidden" id="tableItem1">
+                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                <span class="w-full date ">
+                                    Date
+                                </span>
+                            </th>
+
+                            <td class="px-6 py-4">
+                                <span class=" w-full expense">
+                                    Expenses
+                                </span>  
+                            </td>
+
+                            <td class="px-6 py-4">
+                                <span class=" w-full item">
+                                    Item
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class=" w-full amount">
+                                    Amount
+                                </span>
+                            </td>
+
+                             <td>
+                                <div class="cursor-pointer action relative text-center">
+                                    <button onclick="dropdownOpen(event)"
+                                        type="button" class="actionButton" data-dropdown-toggle="dropdownid">
+                                        <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 4 15">
+                                            <path d="M3.5 1.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm0 6.041a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm0 5.959a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
+                                        </svg>
+                                    </button>
+
+                                </div>
+                            </td> 
+                      <div id="dropdownid" class="z-10 hidden bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700 dropdown">
+                                <ul class="p-2 text-xs 2xl:text-sm  text-black "
+                                    aria-labelledby="dropdownDefaultButton">
+                                    <li>  
+                                        <a class="EditOfficeExpanses" data-modal-target="crud-modal" data-modal-toggle="crud-modal" id="editButton" onclick="EditformModaleOpen()" href="">
+                                            <div class="flex">
+                                                <svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m14.3 4.8 2.9 2.9M7 7H4a1 1 0 0 0-1 1v10c0 .6.4 1 1 1h11c.6 0 1-.4 1-1v-4.5m2.4-10a2 2 0 0 1 0 3l-6.8 6.8L8 14l.7-3.6 6.9-6.8a2 2 0 0 1 2.8 0Z" />
+                                                </svg> Edit
+                                            </div>
+                                        </a>
+                                    </li>
+
+                                    <li>
+                                        <a class="DeleteOfficeExpenses" href="" id="deleteButton">
+                                            <div class="flex">
+                                                <svg class="flex-shrink-0 w-5 h-5  " aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 7h14m-9 3v8m4-8v8M10 3h4a1 1 0 0 1 1 1v3H9V4a1 1 0 0 1 1-1ZM6 7h12v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7Z" />
+                                                </svg>
+                                                Delete
+                                            </div>
+                                        </a>
+                                    </li>
+
+                                    <!-- <li>
+                                        <a data-tooltip-target="infoicon" type="button" role="button" class="tooltipicon">
+                                            <svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 13V8m0 8h0m9-4a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                            </svg>
+                                        </a>
+                                        <div id="infoicon" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                            <span id="description" class="description"></span>
+                                            <div class="tooltip-arrow" data-popper-arrow></div>
+                                        </div>
+                                        Description
+
+                                    </li> -->
+                                </ul>
+                            </div> 
+
+
+
+                            <td class="px-6 py-4 flex">
+                                <span class=" w-full edit">
+                                    <a class="EditOfficeExpanses" data-modal-target="crud-modal" data-modal-toggle="crud-modal" onclick="EditformModaleOpen()" href=""> <svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m14.3 4.8 2.9 2.9M7 7H4a1 1 0 0 0-1 1v10c0 .6.4 1 1 1h11c.6 0 1-.4 1-1v-4.5m2.4-10a2 2 0 0 1 0 3l-6.8 6.8L8 14l.7-3.6 6.9-6.8a2 2 0 0 1 2.8 0Z" />
+                                        </svg>
+
+                                    </a>
+                                </span>
+
+                                <span class=" w-full amount ml-5">
+                                    <a class="DeleteOfficeExpenses" href=""> <svg class="flex-shrink-0 w-5 h-5  " aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 7h14m-9 3v8m4-8v8M10 3h4a1 1 0 0 1 1 1v3H9V4a1 1 0 0 1 1-1ZM6 7h12v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7Z" />
+                                        </svg> </a>
+                                </span>
+
+                                <span class="flex justify-end w-full">
+                                    <a data-tooltip-target="infoicon" type="button" role="button" class="tooltipicon">
+                                        <svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 13V8m0 8h0m9-4a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                        </svg>
+                                    </a>
+                                    <div id="infoicon" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                        <span id="description" class="description"></span>
+                                        <div class="tooltip-arrow" data-popper-arrow></div>
+                                    </div>
+                                </span>
+                            </td>
+                            {{-- <td>
+                                <span class=" w-full amount">
+                                    <a class="DeleteOfficeExpenses"> <svg class="flex-shrink-0 w-5 h-5  " aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 7h14m-9 3v8m4-8v8M10 3h4a1 1 0 0 1 1 1v3H9V4a1 1 0 0 1 1-1ZM6 7h12v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7Z" />
+                                        </svg> </a>
+                                </span>
+                            </td>--}}
+
+
+                            {{-- <td>
+
+                                <span class="flex justify-end w-full">
+                                    <a data-tooltip-target="infoicon" type="button" role="button" class="tooltipicon">
+                                        <svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 13V8m0 8h0m9-4a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                        </svg>
+                                    </a>
+                                    <div id="infoicon" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+                                        <span id="description" class="description"></span>
+                                        <div class="tooltip-arrow" data-popper-arrow></div>
+                                    </div>
+                                </span>
+                            </td>  --}}
+                        </tr>
+                    </tbody>
+
+                    <div class="flex justify-center" id="spiner">
+                        <div role="status">
+                            <svg aria-hidden="true" class="inline  text-gray-200 animate-spin dark:text-gray-600 fill-pink-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor" />
+                                <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill" />
+                            </svg>
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                    </div>
+
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+</div>
+
+
+
+
+
+
+
+
+
+
+<div id="office_expance" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+    <div class="relative p-4 w-full max-w-2xl max-h-full">
+        <!-- Modal content -->
+        <form class="relative bg-white rounded-lg shadow dark:bg-gray-700" id="expance_form" method="POST" onsubmit="expance_formSubmit()">
+            <!-- Modal header -->
+            @csrf
+            <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
+                <h3 class="text-xl font-semibold text-gray-900  " id="model-titel" style="margin-left: 200px;">
+                    Add Office Expense
+                </h3>
+                <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" onclick="formModaleClose()">
+                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+                    </svg>
+                    <span class="sr-only">Close modal</span>
+                </button>
+            </div>
+            <!-- Modal body -->
+            <div class="p-4 md:p-5 space-y-4">
+                <div class=" items-end" id="main-form">
+                    <div class="flex gap-2">
+
+                        <div class="lg:w-1/2  relative w-full mb-5 px-2 ">
+                            <label for="date" class="block mb-2  text-xs 2xl:text-sm font-medium text-gray-900 dark:text-gray-300">
+                                Date
+                                <span class="text-red-500">*</span></label>
+                            <input type="date" name="date" id="date" class="shadow-sm bg-white border border-gray-300 text-gray-900 text-xs 2xl:text-sm rounded-sm focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" />
+                            <span class="text-red-600 text-xs" id="dateError"></span>
+                        </div>
+
+                        <div class="lg:w-1/2 relative w-full mb-5 px-2 ">
+                            <label for="date" class="block mb-2  text-xs 2xl:text-sm font-medium text-gray-900 dark:text-gray-300">
+                                Select Expense Type
+                                <span class="text-red-500">*</span></label>
+                            <select type="date" name="expance_id" id="expance_id" class="shadow-sm bg-white border border-gray-300 text-gray-900 text-xs 2xl:text-sm rounded-sm focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                                <option value="" disabled selected>Select an Option</option>
+                                @foreach ($expance as $expances)
+                                <option value="{{ $expances->id ??''}}" class="expence_idSelect">
+                                    {{ $expances->expance ?? ''}}
+                                </option>
+                                @endforeach
+                            </select>
+                            <span class="text-red-600 text-xs" id="expance_idError"></span>
+                        </div>
+
+                    </div>
+
+                    <div class="flex  relative w-full mb-5 px-2 ">
+
+                        {{-- <label for="date" class="block mb-2  text-xs 2xl:text-sm font-medium text-gray-900 dark:text-gray-300">
+                            Item
+                            <span class="text-red-500">*</span></label>
+                        <input list="itemList" type="text" name="item" id="item" class="shadow-sm bg-white border border-gray-300 text-gray-900 text-xs 2xl:text-sm rounded-sm focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" />
+                        <datalist id="itemList">--}}
+                        {{-- <option value="Office Rent">
+                                <option value="Electricity Bill">
+                                <option value="Broadband Bill"> --}}
+                        {{-- </datalist>
+                        <span class="text-red-600 text-xs" id="itemError"></span>
+                        --}}
+
+                        <div class="relative  mb-5 px-2 ">
+                            <label for="date" class="block mb-2  text-xs 2xl:text-sm font-medium text-gray-900 dark:text-gray-300">
+                                Name of Item
+                                <span class="text-red-500">*</span></label>
+                            <input list="itemList" type="text" name="item" id="item" class="shadow-sm bg-white border border-gray-300 text-gray-900 text-xs 2xl:text-sm rounded-sm focus:ring-primary-500 focus:border-primary-500 block  p-2.5" style="width: 270px;" />
+                            <datalist id="itemList">
+                                {{-- <option value="Office Rent">
+                                <option value="Electricity Bill">
+                                <option value="Broadband Bill"> --}}
+                            </datalist>
+                            <span class="text-red-600 text-xs" id="itemError"></span>
+                        </div>
+                        <div style="margin-left: 17px;">
+                            <label for="date" class=" block mb-2  text-xs 2xl:text-sm font-medium text-gray-900 dark:text-gray-300 ">
+                                Amount
+                                <span class="text-red-500">*</span></label>
+                            <input type="text" name="amount" id="amount" onkeypress="return isNumber(event)" class="shadow-sm bg-white border border-gray-300 text-gray-900 text-xs 2xl:text-sm rounded-sm focus:ring-primary-500 focus:border-primary-500 block  p-2.5" style="width: 280px;" />
+                            <span class="text-xs text-red-600 absolute pt-1 left-9 w-full pl-2" id="bill_rantAmountError">
+                                @if ($errors->has('amount'))
+                                {{ $errors->first('amount') }}
+                                @endif
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <div class="relative w-full mb-5 px-2 ">
+                        <label for="date" class="block mb-2  text-xs 2xl:text-sm font-medium text-gray-900 dark:text-gray-300">
+                            Description
+                        </label>
+                        <textarea type="text" name="description" id="bill_rantDescription" class="shadow-sm bg-white border border-gray-300 text-gray-900 text-xs 2xl:text-sm rounded-sm focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5"></textarea>
+                        <span class="text-xs text-red-600 absolute pt-1 left-0 w-full pl-2" id="bill_rantDescriptionError">
+                            @if ($errors->has('description'))
+                            {{ $errors->first('description') }}
+                            @endif
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <!-- Modal footer -->
+            <div class="flex items-center p-4 md:p-5 border-t border-gray-200 rounded-b dark:border-gray-600">
+                <button type="button" onclick="expance_formSubmit(event)" class="text-white bg-rose-500 hover:bg-rose-600 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+                    Submit
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+
+
+
+@endsection
+
+
+@section('footer_part')
+<script>
+    // globel Varibles
+
+    let getExpancesData = {
+        "_token": "{{ csrf_token() }}",
+    };
+
+
+    let getDataPrm = {
+        current_page: 1,
+        from: 1,
+        next_page_url: '/admin/office-expanses-get-data',
+        to: 15,
+    }
+    //console.log(getDataPrm);
+
+    // run on page Load function     
+
+    document.addEventListener('DOMContentLoaded', () => {
+        getData();
+    });
+
+    // fatch Data
+
+
+    const getData = async () => {
+
+        spiner.style.display = "flex";
+        try {
+            let response = await fetch(getDataPrm.next_page_url, {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(getExpancesData)
+            });
+
+            //console.log(response);
+
+
+            if (!response.ok) {
+                // console.log(response);
+                throw new Error('Request failed');
+                Swal.fire('error', 'Something went wrong for fatching Data', 'error');
+                spiner.style.display = "none";
+            }
+
+            let responseData = await response.json();
+            //console.log(responseData);  
+            getDataPrm.current_page = responseData.officeExpances.current_page;
+            getDataPrm.from = responseData.officeExpances.from;
+            getDataPrm.to = responseData.officeExpances.to;
+            getDataPrm.next_page_url = responseData.officeExpances.next_page_url;
+            responseData.officeExpances.data.forEach((value) => {
+                //console.log(value);
+
+                cloneTableRow({
+                    date: new Date(value.date)
+                        .toLocaleDateString("en-GB", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                        }),
+                    expense: value.expances?.expance,
+                    item: value.item,
+                    amount: value.amount,
+                    id: value.id,
+                    description: value.description
+                });
+            })
+
+            //console.log(cloneTableRow);
+
+            document.querySelectorAll('.actionButton').forEach((element) => {
+                element.addEventListener('click', () => {
+                    const id = element.getAttribute('data-id')
+                    document.querySelector("#editButton").setAttribute('href', `office-expanses-edit/${id}`)
+                    document.querySelector('#deleteButton').setAttribute('href', `deleteOfficeExpense/${id}`)
+                })
+            })
+
+            // const date = new Date(responseData.month);  
+
+            totalExpanceMonth.textContent = new Date(responseData.month).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long"
+            });
+
+
+            totalExpance.textContent = responseData.officeExpancesSum
+            spiner.style.display = "none";
+
+        } catch (e) {
+            console.error('Fetch error:', e);
+            Swal.fire('error', 'Something went wrong for fatching Data', 'error');
+            spiner.style.display = "none";
+        }
+    }
+
+    // filters
+
+    const filter = (event) => {
+        // console.log(event);
+
+        if (event.value === "delete_expenses") {
+            window.location.href = "{{ route('review.DeletedExpanses') }}";
+            return;
+        }
+
+
+        getDataPrm.next_page_url = '/admin/office-expanses-get-data'
+
+        removeRows();
+        //console.log(removeRows());
+
+        if (event.value) {
+            getExpancesData[event.name] = event.value
+        } else {
+            delete getExpancesData[event.name]
+        }
+
+        //console.log(getExpancesData[event.name]);  
+
+        getData()
+        //console.log(getData());
+
+    };
+
+    filtersReset.addEventListener('click', () => {
+        removeRows();
+        getDataPrm.next_page_url = '/admin/office-expanses-get-data'
+        getExpancesData = {
+            "_token": "{{ csrf_token() }}",
+        };
+
+        getData()
+
+    });
+
+    // on Scroll event
+
+    window.addEventListener('scroll', () => {
+        // Check if the user has scrolled to the bottom of the page
+        if (isAtBottom()) {
+            if (getDataPrm.next_page_url) {
+                getData();
+            }
+        }
+
+    });
+
+    // is scroll on bottom  
+
+    const isAtBottom = () => {
+        return window.innerHeight + window.scrollY >= document.body.offsetHeight;
+    }
+
+    // Form Submit Function  
+
+    const expance_formSubmit = (event) => {
+        event.preventDefault();
+        const formData = new FormData(expance_form);
+        const values = Object.fromEntries(formData);
+        let errors = [];
+        if (!values.expance_id) {
+            expance_idError.innerHTML = 'Please Select an Expense Type';
+            errors.push(expance_idError);
+        }
+
+        if (!values.date) {
+            dateError.innerHTML = 'Select Date';
+            errors.push(dateError);
+        }
+
+        if (!values.item) {
+            itemError.innerHTML = 'Please Enter an Item';
+            errors.push(itemError);
+        }
+
+        if (!values.amount) {
+            bill_rantAmountError.innerHTML = 'Please Enter an Amount';
+            errors.push(bill_rantAmountError);
+        }
+
+        if (errors.length == 0) {
+            formSubmit(values);
+        }
+    }
+
+    // On input on Form Function
+
+    expance_form.addEventListener('input', (event) => {
+        const formData = new FormData(expance_form);
+        const values = Object.fromEntries(formData);
+
+        if (values.expance_id) {
+            expance_idError.innerHTML = '';
+        }
+        if (values.date) {
+            dateError.innerHTML = '';
+        }
+        if (values.item) {
+            itemError.innerHTML = '';
+        }
+        if (values.amount) {
+            bill_rantAmountError.innerHTML = '';
+        }
+
+    });
+
+    // api For Form Submit
+
+    const formSubmit = async (formData) => {
+
+        try {
+            // const modal = new Modal(office_expance);
+            const response = await fetch('office-expanses-save', {
+                method: 'POST',
+
+
+                headers: {
+                    'Content-Type': 'application/json', // assuming you're sending JSON data
+                },
+                body: JSON.stringify(formData),
+            })
+
+            // console.log(response);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+                Swal.fire('error', 'Something went wrong! Please try again', 'error');
+                return
+            }
+            // else { return response.json()}
+            Swal.fire('success', 'Data Save Successfully', 'success');
+            const data = await response.json();
+            formModaleClose();
+
+            expance_form.reset();
+
+            // const date = new Date(formData.date);
+            // const formattedDate = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+            //console.log(formattedDate);
+
+
+            cloneTableRow({
+                'date': new Date(formData.date).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+
+                }),
+                expense: document.querySelectorAll(
+                    `option[value="${formData.expance_id}"].expence_idSelect`)[0].text,
+                item: formData.item,
+                amount: formData.amount,
+                id: data.data.id
+            }, true);
+
+        } catch (error) {
+            // Handle errors here
+            // console.log('kldl');
+            console.error('There was a problem with the fetch operation:', error);
+            Swal.fire('error', 'Something went wrong! Please try again', 'error');
+        }
+    }
+
+    const formModaleOpen = () => {
+        const modal = new Modal(office_expance);
+        modal.show();
+    }
+
+    const formModaleClose = () => {
+        const modal = new Modal(office_expance);
+        modal.hide();
+    }
+
+
+
+
+    let uniqueIds = new Set();
+
+    const cloneTableRow = (data, top) => {
+
+        // if (uniqueIds.has(data.id)) {
+        //     return;
+        // }
+        // uniqueIds.add(data.id);
+
+        const node = document.getElementById("tableItem1");
+        let clone = node.cloneNode(true);
+        //console.log(clone.classList);
+
+
+        clone.classList.remove('hidden')
+        clone.querySelector(".date").textContent = data.date;
+        clone.querySelector(".expense").textContent = data.expense;
+        clone.querySelector(".item").textContent = data.item;
+        clone.querySelector(".amount").textContent = data.amount;
+        clone.querySelector('.action').querySelector('button').setAttribute('data-id', data.id)
+
+        // clone.querySelector(".EditOfficeExpanses").setAttribute('href', `office-expanses-edit/${data.id}`);
+        // clone.querySelector(".DeleteOfficeExpenses").setAttribute('href', `deleteOfficeExpense/${data.id}`);
+        // clone.querySelector(".tooltipicon").setAttribute('data-tooltip-target', `infoicon${data.id}`);
+
+        //clone.querySelector("#dropdownid").setAttribute('dropdownid', `dropdownid${data.id}`);
+
+
+
+        clone.querySelector("[role='tooltip']").setAttribute('id', `infoicon${data.id}`);
+        clone.querySelector(".description").textContent = data.description;
+
+        if (top) {
+            const tableContent = document.getElementById("tableContant");
+            const firstRow = tableContent.getElementsByTagName("tr")[0]; // Get the first row of the table  
+            tableContent.insertBefore(clone, firstRow);
+            return
+        }
+
+        document.getElementById("tableContant").appendChild(clone);
+
+    }
+
+    const removeRows = () => {
+
+        const tableRows = document.querySelectorAll("#tableContant tr:not(.hidden)");
+        tableRows.forEach(row => {
+
+            row.remove();
+        });
+    }
+
+
+    // document.addEventListener('click', () => {
+    //     document.querySelectorAll('.dropdown').forEach((event)=>{
+    //         event.classList.add('hidden');
+    //     })
+    // })
+
+
+
+    // const dropdownOpen = (event) => {
+    //     document.getElementById('dropdownid').classList.toggle('hidden');
+
+    // }
+
+
+    let data = @js($barchart);
+    var ctx = document.getElementById('barChart').getContext('2d');
+    var myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: Object.values(data.labels),
+            datasets: [{
+                label: 'Data',
+                data: Object.values(data.data),
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+
+
+
+    var ctx = document.getElementById('pieChart').getContext('2d');
+    var myChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: @json($piechart['labels']),
+            datasets: [{
+                data: @json($piechart['data']),
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(255, 206, 86, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(153, 102, 255, 0.7)',
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)',
+                ],
+                borderWidth: 1
+            }]
+        },
+    });
+
+
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var ctx = document.getElementById('barChart3').getContext('2d');
+        var myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: @json($data['labels']),
+                datasets: @json($data['datasets'])
+            },
+            options: {
+                scales: {
+                    x: {
+                        stacked: false,
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        stacked: false,
+                        beginAtZero: true
+                    }
+                },
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                }
+            }
+        });
+    });
+    document.addEventListener('DOMContentLoaded', function() {
+        const data = @json($percent['percentExpenses']);
+        const totalData = @json($percent['totalExpensesByCategory']);
+
+        const ctx = document.getElementById('pieChartPercentage').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(data),
+                datasets: [{
+                    label: 'Expense Distribution',
+                    data: Object.values(data),
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.2)',
+                        'rgba(54, 162, 235, 0.2)',
+                        'rgba(255, 206, 86, 0.2)',
+                        'rgba(75, 192, 192, 0.2)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(tooltipItem) {
+                                const total = totalData[tooltipItem.label];
+                                const percentage = (data[tooltipItem.label]).toFixed(2);
+                                return `${tooltipItem.label}: ${total} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+<script>
+    const isNumber = (event) => {
+        const charCode = (event.which) ? event.which : event.keyCode;
+        if ((charCode > 31 && (charCode < 48 || charCode > 57)) && charCode !== 46) {
+            event.preventDefault();
+        } else {
+            return true;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        let pickers = new monthpicker(monthPiker, {
+            format: 'YYYY-MM',
+            container: '#picker-container',
+        });
+
+        // const currentdate = new Date();
+        // //console.log(currentdate);
+
+        // if (monthPiker.value == "") {
+        //     const currentdate = new Date();
+        //     const month = document.getElementById('monthPiker').innerHTML = currentdate;
+
+        //     console.log(month);
+        // }
+
+    });
+</script>
+@endsection
