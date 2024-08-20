@@ -1,0 +1,361 @@
+<?php
+
+namespace App\Http\Controllers\admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\Expenses;
+use App\Models\OfficeExpense;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
+use Illuminate\Http\Request;
+use PhpParser\Node\Expr\Cast\String_;
+use Illuminate\Support\Facades\DB;
+
+
+class OfficeExpansesController extends Controller
+{
+    /*
+        For display the office expansions page with all expance types  
+    */
+    public function index(Request $req)
+    {
+        $expance = Expenses::all();
+        $officeExpense = OfficeExpense::with('expances');
+
+        //dd($req->all());
+
+        if ($req->expance_id && $req->month) {
+
+            $monthYear = explode('-', $req->month);
+            $year = $monthYear[0];
+            $month = $monthYear[1];
+
+            $officeExpense = $officeExpense->where('expance_id', $req->expance_id)
+                ->whereYear('date', $year)
+                ->whereMonth('date', $month);
+        }
+
+
+
+        $totalExpenses = $officeExpense->sum('amount'); // Assuming the column name is 'amount'
+        //dd($totalExpenses);
+        $officeExpense = $officeExpense->get();
+
+        // return response()->json([
+        //     'officeExpenses' => $officeExpense,
+        //     'totalExpenses' => $totalExpenses,
+        // ]);
+        // dd($req->all());
+
+
+
+
+        $monthlyAmounts = [];
+
+        for ($month = 01; $month <= 12; $month++) {
+            $monthlyAmount = OfficeExpense::whereMonth('date', $month)
+                ->sum('amount');
+            $monthlyAmounts['data'][$month] = $monthlyAmount;
+            $monthlyAmounts['labels'][$month]  = Carbon::createFromFormat('!m', $month)->format('F');
+        }
+
+
+
+        $currentDate = Carbon::now();
+        $officeExpancesSum = OfficeExpense::whereYear('date', $currentDate->format('Y'))
+            ->whereMonth('date', $currentDate->format('m'))
+            ->sum('amount');
+
+
+        $currentDate = Carbon::now();
+
+
+        $allexpense = DB::table('office_expenses')
+            ->join('expenses', 'office_expenses.expance_id', '=', 'expenses.id')
+            ->selectRaw('expenses.expance as expance_name, YEAR(office_expenses.date) as year, MONTH(office_expenses.date) as month, SUM(office_expenses.amount) as total_amount')
+            ->groupBy('expance_name')
+            ->groupByRaw('YEAR(office_expenses.date), MONTH(office_expenses.date)')
+            ->orderBy('expance_name', 'asc')
+            ->orderBy('year', 'asc')
+            ->orderBy('month', 'asc')
+            ->get();
+
+
+        $expenseTypes = ['Patty Cash', 'Bill', 'Rent', 'Sweaper', 'Electricity', 'Office rent'];
+
+        $monthlyExpenses = [];
+
+        for ($month = 1; $month <= 12; $month++) {
+            $monthlyExpenses[$month] = [
+                'labels' => [],
+                'data' => array_fill(0, count($expenseTypes), 0),
+            ];
+
+            foreach ($expenseTypes as $index => $expenseType) {
+                foreach ($allexpense as $expense) {
+                    if ($expense->month == $month && $expense->expance_name == $expenseType) {
+                        $monthlyExpenses[$month]['labels'][] = $expense->expance_name;
+                        $monthlyExpenses[$month]['data'][$index] = $expense->total_amount;
+                    }
+                }
+            }
+        }
+
+        $currentMonth = Carbon::now()->month;
+
+        $categories = ['Electricity', 'Sweaper', 'Office rent', 'Patty Cash'];
+
+        $totalExpensesByCategory = [];
+
+        foreach ($categories as $category) {
+            $total = OfficeExpense::whereHas('expances', function ($query) use ($category) {
+                $query->where('expance', $category);
+            })
+                ->whereMonth('date', $currentMonth)
+                ->sum('amount');
+
+            $totalExpensesByCategory[$category] = $total;
+        }
+
+        $totalExpenses = array_sum($totalExpensesByCategory);
+
+        $percentExpenses = [];
+
+        foreach ($totalExpensesByCategory as $category => $total) {
+            // Calculate the percentage of each category's total
+            $percentExpenses[$category] = ($total / $totalExpenses) * 100;
+        }
+
+
+        $percent = [
+
+            'totalExpensesByCategory' => $totalExpensesByCategory,
+            'percentExpenses' => $percentExpenses
+
+        ];
+
+        //return $percent;
+
+
+
+        $data = [
+            'labels' => ['Jan-24', 'Feb-24', 'Mar-24', 'Apr-24', 'May-24', 'Jun-24', 'Jul-24', 'Aug-24', 'Sep-24', 'Oct-24', 'Nov-24', 'Dec-24'],
+            'datasets' => []
+        ];
+
+        foreach ($expenseTypes as $expenseType) {
+            $dataset = [
+                'label' => $expenseType,
+                'backgroundColor' => 'rgba(54, 162, 235, 0.5)',
+                'borderColor' => 'rgba(54, 162, 235, 1)',
+                'borderWidth' => 1,
+                'data' => [],
+            ];
+
+            foreach ($monthlyExpenses as $month => $monthData) {
+                $index = array_search($expenseType, $expenseTypes);
+                $dataset['data'][] = $monthData['data'][$index];
+            }
+
+            $data['datasets'][] = $dataset;
+        }
+
+
+        $barchart = [
+            'labels' => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            'data' => [33, 44, 30, 33, 10, 44],
+        ];
+
+        $piechart = [
+            'labels' => ['Electricity ', 'Office rent', 'Sweeper', 'Category D', 'Category E'],
+            'data' => [33, 30, 15, 10, 20],
+        ];
+
+        return view('admin.office_expanses.index', compact('expance','totalExpenses', 'currentDate', 'data', 'monthlyAmounts', 'barchart', 'piechart', 'monthlyExpenses', 'percent', 'officeExpense'));
+    }
+
+    /*
+        For saving the data of the office expansions  
+    */
+    public function saveData(Request $req)
+    {
+        $data = [
+            'expance_id' => $req->expance_id,
+            'date' => $req->date,
+            'item' => $req->item,
+            'amount' => $req->amount,
+            'description' => $req->description,
+        ];
+
+        $res =  OfficeExpense::create($data);
+        //dd($res);
+        //return ['status' => 'success', 'data' => $res];
+        return redirect()->route('office_expanses');
+    }
+
+    /*
+        For get the data of office expances accoding to given month
+    */
+    public function getData(Request $req)
+    {
+
+        $currentDate = Carbon::now();
+        if ($req->month) {
+            $currentDate = Carbon::parse($req->month . '-10');
+        }
+
+        $filter = $req->only('expance_id');
+
+        $officeExpancesSum = OfficeExpense::whereYear('date', $currentDate->format('Y'))
+            ->whereMonth('date', $currentDate->format('m'))
+            ->sum('amount');
+
+        if ($req->month) {
+            $officeExpances = OfficeExpense::whereYear('date', $currentDate->format('Y'))
+                ->whereMonth('date', $currentDate->format('m'))
+                ->with(['expances' => function ($query) {
+                    return $query->select('id', 'expance');
+                }])
+                ->where($filter)
+                ->orderBy('date', 'desc')
+                ->paginate(15);
+        } else {
+            $officeExpances = OfficeExpense::with(['expances' => function ($query) {
+                return $query->select('id', 'expance');
+            }])
+                ->where($filter)
+                ->orderBy('date', 'desc')
+                ->paginate(15);
+        }
+
+
+        return response()->json(array(
+            'officeExpances' => $officeExpances,
+            'officeExpancesSum' => $officeExpancesSum,
+            'month' => $currentDate
+        ));
+    }
+
+    /*  
+        For display expances type page in settings tabe  
+    */
+    public function expanceType(Request $req)
+    {
+        $expances = Expenses::paginate(15);
+
+        return view('admin.office_expanses.expances-type', compact('expances'));
+    }
+
+    /*
+        For save new or update expances type
+    */
+    public function expanceTypeSave(Request $req)
+    {
+        $data = $req->only('expance');
+
+        Expenses::updateOrCreate(['id' => $req->id], $data);
+
+        return back()->with('message', 'Data updated successfully');
+    }
+
+    /*
+        For delete an expances type
+    */
+    public function expanceTypeDelete($id)
+    {
+        Expenses::where('id', $id)->delete();
+        return response()->json(array('status' => true));
+    }
+
+
+    public function deleteOfficeExpenses($id)
+    {
+
+        $officeExpances = OfficeExpense::with('expances')->find($id);
+        //dd($officeExpances->toArray());
+        // OfficeExpense::where('id', $id)->delete();
+        return view('admin.office_expanses.reasondelete', compact('officeExpances'));
+    }
+
+
+
+    public function deleteReasonExpanses(Request $req)
+    {
+        $data = [
+            'reason' => $req->reason,
+        ];
+
+        $expances = OfficeExpense::find($req->id);
+        $expances->reason = $data['reason'];
+        $expances->save();
+        $expances->delete();
+        return redirect()->route('office_expanses');
+    }
+
+    public function editOfficeExpanses($id)
+    {
+        $officeExpances = OfficeExpense::with('expances')->find($id); // Find the specific OfficeExpense by ID
+        $selectedExpanceId = $officeExpances ? $officeExpances->expance_id : null; // Set the selected expance ID
+        $Expances = Expenses::all(); // Get all expances to populate the dropdown
+
+        return view('admin.office_expanses.editofficeexpances', compact('officeExpances', 'Expances', 'selectedExpanceId'));
+    }
+
+    public function updateOfficeExpanses(Request $req)
+    {
+        $expense = OfficeExpense::find($req->id);
+        // dd($expense);
+
+        if ($expense) {
+            $expense->date = $req->date;
+            $expense->expance_id = $req->expance_id;
+            // dd($req->expance_id);
+            $expense->item = $req->item;
+            $expense->amount = $req->amount;
+            $expense->description = $req->description;
+
+            $expense->save();
+        }
+        return redirect()->route('office_expanses');
+    }
+
+
+
+    public function reviewDeletedExpanses()
+    {
+        $deleteexpanse = OfficeExpense::with('expances')->onlyTrashed()->get();
+        // dd( $deleteexpanse->toArray());
+        return  view('admin.office_expanses.reviewDeletedExpanses', compact('deleteexpanse'));
+    }
+
+    public function restoreExpense($id)
+    {
+        $officeExpense =  OfficeExpense::withTrashed()->find($id)->restore();
+        // $officeExpense->restore();
+        // dd($officeExpense);
+        return back();
+    }
+
+
+    public function permanentDelete(string $uid)
+    {
+        $permanentDelete = OfficeExpense::where('id', $uid)->forceDelete();
+        //return  $permanentDelete;
+        //return  $permanentDelete; 
+        return redirect()->route('review.DeletedExpanses');
+    }
+
+
+    public function expanseTypeAdd(Request $req)
+    {
+
+        $req->validate([
+
+            'expance' => 'required',
+        ]);
+
+        $expen = Expenses::Create($req->all());
+        dd($expen->toArray());
+        return redirect()->route('office_expanses.expance-type');
+    }
+}
