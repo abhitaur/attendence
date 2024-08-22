@@ -1,0 +1,640 @@
+@extends('layout.admin')
+@section('content')
+<div class="flex flex-col w-full bg-white border-gray-200 px-3 rounded-lg shadow-lg sm:rounded-lg border-2  dark:bg-gray-800 dark:border-gray-700">
+    <div class="flex p-4 justify-between">
+        <div>
+            <span class="font-extrabold text-lg">Active Loans</span>
+        </div>
+        <div>
+            <a role="button" type="button" data-modal-target="add_loan" data-modal-toggle="add_loan" class="text-white bg-rose-400 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-green-600 dark:hover:bg-green-700 ">
+                Add Loan
+            </a>
+        </div>
+    </div>
+
+    <div class="grid mb-4 sm:grid-cols-2 lg:grid-cols-2 gap-12 w-full">
+        @foreach ($loans as $lone)
+        <div class="flex flex-col w-full bg-white border-gray-200 rounded-lg shadow-lg sm:rounded-lg border-2  dark:bg-gray-800 dark:border-gray-700">
+            <div class="flex p-4 justify-between gap-5">
+                <div>
+                    <span class="font-extrabold text-lg">{{ $lone->loan }}</span>
+                </div>
+                <div class=" gap-2 justify-between flex-wrap ">
+                    <div>
+                        <span class="text-sm">
+                            <span class="font-bold">Interest Rate:</span> {{ $lone->interest_rate ?? 'N/A' }}%
+                        </span>
+                    </div>
+                    <div>
+                        <span class="text-sm">
+                            <span class="font-bold">Total Amount:</span> ₹{{ number_format($lone->amount) }}
+                        </span>
+                    </div>
+                    <div>
+                        <span class="text-sm">
+                            <span class="font-bold">Installment:</span> ₹{{ number_format($lone->installment) }}
+                        </span>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <div>
+                        <a data-modal-target="edit-modal" data-modal-toggle="edit-modal" onclick="openModel({
+                    'id': '{{ $lone->id }}',
+                    'interest_rate': '{{ $lone->interest_rate }}',
+                    'amount': '{{ $lone->amount }}',
+                     'start_date' : '{{ $lone->start_date }}',
+                     'installment' : '{{ $lone->installment }}',
+                    'time_peroids' : '{{ $lone->time_peroids }}',
+                     'loan' : '{{$lone->loan}}',
+                    })"><svg class="w-6 h-6 text-gray-800 dark:text-white mr-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m14.3 4.8 2.9 2.9M7 7H4a1 1 0 0 0-1 1v10c0 .6.4 1 1 1h11c.6 0 1-.4 1-1v-4.5m2.4-10a2 2 0 0 1 0 3l-6.8 6.8L8 14l.7-3.6 6.9-6.8a2 2 0 0 1 2.8 0Z" />
+                            </svg></a>
+
+                    </div>
+                    <div>
+                        <a role="button" type="button" data-modal-target="loanInstallment" data-modal-toggle="loanInstallment" onclick="loanInstallmentModal({{ $lone->id }})" class="text-white bg-rose-400 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-green-600 dark:hover:bg-green-700">
+                            <span class="text-sm">+</span> installment
+                        </a>
+                    </div>
+                    <div>
+                        <a role="button" type="button" data-modal-target="closeLoan" data-modal-toggle="closeLoan" onclick="closeLoneModal({{ $lone->id }})" class="text-white bg-rose-400 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-green-600 dark:hover:bg-green-700 ">
+                            Close Loan
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+            <div class="w-full ">
+                <div class="relative officeExpencesBox w-full ">
+                    <table class="relative w-full text-sm text-left rtl:text-right text-gray-500">
+                        <thead class="text-xs text-black uppercase bg-slate-100 ">
+                            <tr>
+                                <th scope="col" class="px-6 py-3">
+                                    <span class="w-full">
+                                        Date
+                                    </span>
+                                </th>
+
+                                <th scope="col" class="px-6 py-3">
+                                    <span class="w-full">
+                                        Amount
+                                    </span>
+                                </th>
+                                <th scope="col" class="px-6 py-3">
+                                    <span class="flex justify-end w-full">
+                                        Mode
+                                    </span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($lone->installments as $installment)
+                            <tr class="bg-white border-b  odd:bg-white  even:bg-slate-50">
+                                <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                    <span class=" w-full">
+                                        {{ (new dateTime($installment->date))->format('d M, Y') }}
+                                    </span>
+                                </th>
+
+                                <td class="px-6 py-4">
+                                    <span class=" w-full">
+                                        {{ $installment->amount }}
+                                    </span>
+                                </td>
+
+                                <td class="px-6 py-4">
+                                    <span class="flex justify-end w-full">
+                                        {{ $installment->mode == 1 ? 'Online' : 'Cash' }}
+                                    </span>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        @endforeach
+
+    </div>
+</div>
+
+<div id="add_loan" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+
+    <div class="relative p-4 w-full max-w-2xl max-h-full">
+        <!-- Modal content -->
+        <form class="relative bg-white rounded-lg shadow dark:bg-gray-700" id="loanForm" method="POST" action="{{ route('loans.addLoan') }}" onsubmit="loanFormSubmit(event)">
+            <!-- Modal header -->
+            @csrf
+            <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
+                <h3 class="text-xl font-semibold text-gray-900  " id="model-titel">
+                    Add Loan </h3>
+                <button type="button" onclick="closeloanFormSubmit(event)" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-hide="add_loan">
+                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+                    </svg>
+                    <span class="sr-only">Close modal</span>
+                </button>
+            </div>
+
+
+
+            <!-- Modal body -->
+            <div class="p-4 md:p-5 space-y-4">
+                <div class=" gap-2 items-end" id="main-form">
+                    <div class="relative w-full mb-5 px-2 ">
+                        <label for="loanStartDate" class="block mb-2  text-xs 2xl:text-sm font-medium text-gray-900 dark:text-gray-300">
+                            Start Date
+                            <span class="text-red-500">*</span></label>
+                        <input type="date" name="start_date" id="loanStartDate" class="shadow-sm bg-white border border-gray-300 text-gray-900 text-xs 2xl:text-sm rounded-sm focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" />
+                        <span class="text-red-600 text-xs" id="loanStartDateError">
+                            @if ($errors->has('start_date'))
+                            {{ $errors->first('start_date') }}
+                            @endif
+                        </span>
+                    </div>
+
+                    <div class="relative w-full mb-5 px-2 ">
+                        <label for="loanLoan" class="block mb-2  text-xs 2xl:text-sm font-medium text-gray-900 dark:text-gray-300">
+                            Loan Type
+                            <span class="text-red-500">*</span></label>
+                        <input type="text" name="loan" id="loanLoan" class="shadow-sm bg-white border border-gray-300 text-gray-900 text-xs 2xl:text-sm rounded-sm focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" />
+                        <span class="text-red-600 text-xs" id="loanLoanError">
+                            @if ($errors->has('loan'))
+                            {{ $errors->first('loan') }}
+                            @endif
+                        </span>
+                    </div>
+
+                    <div class="relative w-full mb-5 px-2 ">
+                        <label for="loanTime_peroids" class="block mb-2  text-xs 2xl:text-sm font-medium text-gray-900 dark:text-gray-300">
+                            Time Period (In Months)
+                            <span class="text-red-500">*</span></label>
+                        <input type="text" name="time_peroids" id="loanTime_peroids" onkeypress="return isNumber(event)" class="shadow-sm bg-white border border-gray-300 text-gray-900 text-xs 2xl:text-sm rounded-sm focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" />
+                        <span class="text-red-600 text-xs" id="loanTime_peroidsError">
+                            @if ($errors->has('time_peroids'))
+                            {{ $errors->first('time_peroids') }}
+                            @endif
+                        </span>
+                    </div>
+
+                    <div class="relative w-full mb-5 px-2 ">
+                        <label for="loanInterest_rate" class="block mb-2  text-xs 2xl:text-sm font-medium text-gray-900 dark:text-gray-300">
+                            Interest Rate (in %)
+                            <span class="text-red-500">*</span></label>
+                        <input type="text" name="interest_rate" onkeypress="return isNumber(event)" id="loanInterest_rate" class="shadow-sm bg-white border border-gray-300 text-gray-900 text-xs 2xl:text-sm rounded-sm focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" />
+                        <span class="text-red-600 text-xs" id="loanInterest_rateError">
+                            @if ($errors->has('interest_rate'))
+                            {{ $errors->first('interest_rate') }}
+                            @endif
+                        </span>
+                    </div>
+
+                    <div class="relative w-full mb-5 px-2 ">
+                        <label for="date" class="block mb-2  text-xs 2xl:text-sm font-medium text-gray-900 dark:text-gray-300">
+                            Loan Amount
+                            <span class="text-red-500">*</span></label>
+                        <input type="text" name="amount" id="loanAmount" onkeypress="return isNumber(event)" class="shadow-sm bg-white border border-gray-300 text-gray-900 text-xs 2xl:text-sm rounded-sm focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" />
+                        <span class="text-red-600 text-xs" id="loanAmountError">
+                            @if ($errors->has('amount'))
+                            {{ $errors->first('amount') }}
+                            @endif
+                        </span>
+                    </div>
+
+                    <div class="relative w-full mb-5 px-2 ">
+                        <label for="loanInstallment" class="block mb-2  text-xs 2xl:text-sm font-medium text-gray-900 dark:text-gray-300">
+                            Installment Amount
+                            <span class="text-red-500">*</span></label>
+                        <input type="text" name="installment" id="loanInstalment" onkeypress="return isNumber(event)" class="shadow-sm bg-white border border-gray-300 text-gray-900 text-xs 2xl:text-sm rounded-sm focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" />
+                        <span class="text-red-600 text-xs" id="loanInstalmentError">
+                            @if ($errors->has('installment'))
+                            {{ $errors->first('installment') }}
+                            @endif
+                        </span>
+                    </div>
+
+                </div>
+            </div>
+            <!-- Modal footer -->
+            <div class="flex items-center p-4 md:p-5 border-t border-gray-200 rounded-b dark:border-gray-600">
+                <button type="submit" value="save" onclick="loanFormSubmit(event)" id="addLoanSubmit" class="text-white bg-rose-400  hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+                    Submit
+                </button>
+            </div>
+        </form>
+    </div> 
+</div>
+
+<div id="loanInstallment" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+
+    <div class="relative p-4 w-full max-w-2xl max-h-full">
+        <!-- Modal content -->
+        <form class="relative bg-white rounded-lg shadow dark:bg-gray-700" id="loanInstallmentForm" method="POST" action="{{ route('loans.addLoanInstallment') }}" onsubmit="loanInstallmentFormSubmit(event)">
+            <!-- Modal header -->
+            @csrf
+            <input type="hidden" name="loan_id" value="" id="loanId">
+            <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
+                <h3 class="text-xl font-semibold text-gray-900  " id="model-titel">
+                    Add Loan Installment
+                </h3>
+                <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-hide="loanInstallment">
+                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+                    </svg>
+                    <span class="sr-only">Close modal</span>
+                </button>
+            </div>
+            <!-- Modal body -->
+            <div class="p-4 md:p-5 space-y-4">
+                <div class=" gap-2 items-end" id="main-form">
+                    <div class="relative w-full mb-5 px-2 ">
+                        <label for="loanStartDate" class="block mb-2  text-xs 2xl:text-sm font-medium text-gray-900 dark:text-gray-300">
+                            Date
+                            <span class="text-red-500">*</span></label>
+                        <input type="date" name="date" id="loanInstallmentDate" class="shadow-sm bg-white border border-gray-300 text-gray-900 text-xs 2xl:text-sm rounded-sm focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" />
+                        <span class="text-red-600 text-xs" id="loanInstallmentDateError">
+                            @if ($errors->has('date'))
+                            {{ $errors->first('date') }}
+                            @endif
+                        </span>
+                    </div>
+
+                    <div class="relative w-full mb-5 px-2 ">
+                        <label for="date" class="block mb-2  text-xs 2xl:text-sm font-medium text-gray-900 dark:text-gray-300">
+                            Amount
+                            <span class="text-red-500">*</span></label>
+                        <input type="text" name="amount" id="loanInstallmentAmount" onkeypress="return isNumber(event)" class="shadow-sm bg-white border border-gray-300 text-gray-900 text-xs 2xl:text-sm rounded-sm focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" />
+                        <span class="text-red-600 text-xs" id="loanInstallmentAmountError">
+                            @if ($errors->has('amount'))
+                            {{ $errors->first('amount') }}
+                            @endif
+                        </span>
+                    </div>
+
+                    <div class="relative w-full mb-5 px-2 ">
+                        <label for="loanInstallmentmode" class="block mb-2  text-xs 2xl:text-sm font-medium text-gray-900 dark:text-gray-300">
+                            Payment <span class="text-red-500">*</span></label>
+                        <div class="flex gap-5 " id="loanInstallmentmode">
+                            <div class="flex items-center">
+                                <input checked id="online" type="radio" value="1" name="mode" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                                <label for="online" class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300">Online</label>
+                            </div>
+                            <div class="flex items-center">
+                                <input id="cash" type="radio" value="2" name="mode" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                                <label for="cash" class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300">Cash</label>
+                            </div>
+                        </div>
+                        <span class="text-red-600 text-xs" id="loanInstallmentmodeError">
+                            @if ($errors->has('for'))
+                            {{ $errors->first('for') }}
+                            @endif
+                        </span>
+                    </div>
+
+                </div>
+            </div>
+            <!-- Modal footer -->
+            <div class="flex items-center p-4 md:p-5 border-t border-gray-200 rounded-b dark:border-gray-600">
+                <button type="button" onclick="loanInstallmentFormSubmit(event)" class="text-white bg-rose-500 hover:bg-rose-600 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+                    Submit
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="closeLoan" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+
+    <div class="relative p-4 w-full max-w-2xl max-h-full">
+        <!-- Modal content -->
+        <form class="relative bg-white rounded-lg shadow dark:bg-gray-700" id="closeLoanForm" enctype="multipart/form-data" method="POST" action="{{ route('loans.closeLoan') }}" onsubmit="closeLoneFormSubmit(event)">
+            <!-- Modal header -->
+            @csrf
+            <input type="hidden" name="id" value="" id="closeLoneId">
+            <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
+                <h3 class="text-xl font-semibold text-gray-900  " id="model-titel">
+                    Close Loan
+                </h3>
+                <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-hide="closeLoan">
+                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+                    </svg>
+                    <span class="sr-only">Close modal</span>
+                </button>
+            </div>
+            <!-- Modal body -->
+            <div class="p-4 md:p-5 space-y-4">
+                <div class=" gap-2 items-end" id="main-form">
+                    <div class="relative w-full mb-5 px-2 ">
+                        <label for="loanStartDate" class="block mb-2  text-xs 2xl:text-sm font-medium text-gray-900 dark:text-gray-300">
+                            Date
+                            <span class="text-red-500">*</span></label>
+                        <input type="date" name="closing_date" id="closeLoneDate" class="shadow-sm bg-white border border-gray-300 text-gray-900 text-xs 2xl:text-sm rounded-sm focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5" />
+                        <span class="text-red-600 text-xs" id="closeLoneDateError">
+                            @if ($errors->has('closing_date'))
+                            {{ $errors->first('closing_date') }}
+                            @endif
+                        </span>
+                    </div>
+
+                    <div class="relative z-0 w-full mb-5 group">
+                        <label for="file" class="block mb-2  text-xs 2xl:text-sm font-medium text-gray-900 dark:text-gray-300">
+                            NOC (No Objection Certificate) <span class="text-red-500">*</span></label>
+                        </label>
+                        <input name="noc" type="file" id="closeLoneNoc" accept=".png, .jpg, .jpeg, .pdf" class="shadow-sm bg-white border border-gray-300 text-gray-900 text-xs 2xl:text-sm rounded-sm focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-300" id="file_input_help">
+                            Only PNG, JPG, JPEG or pdf (MAX. 2mb).
+                        </p>
+                        <span class="text-red-600 text-xs" id="closeLoneNocError"></span>
+                    </div>
+
+                </div>
+            </div>
+            <!-- Modal footer -->
+            <div class="flex items-center p-4 md:p-5 border-t border-gray-200 rounded-b dark:border-gray-600">
+                <button type="button" onclick="closeLoneFormSubmit(event)" class="text-white bg-rose-500 hover:bg-rose-600 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+                    Submit
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+{{-- Edit Modal--}}
+
+
+<!-- Modal toggle -->
+
+
+<!-- Main modal -->
+
+<div id="edit-modal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+    <div class="relative p-4 w-full max-w-md max-h-full">
+        <!-- Modal content -->
+        <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
+            <!-- Modal header -->
+            <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+                    Edit loan </h3>
+                <a href="loans" class="end-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-hide="authentication-modal">
+                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
+                    </svg>
+                    <span class="sr-only">Close modal</span>
+                </a>
+            </div>
+            <!-- Modal body -->
+            <div class="p-4 md:p-5">
+                <form class="space-y-4" action="{{ route('edit_loan' )}}">
+                    @csrf
+                    <input type="hidden" name="id" id="id">
+
+                    <div>
+                        <label for="email" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Start Date</label>
+                        <input type="date" name="startdate" id="startDate" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" placeholder="name@company.com" required />
+                    </div>
+                    <div>
+                        <label for="password" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Loan Type</label>
+                        <input type="text" name="loan_Type" id="loanType" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" required />
+                    </div>
+                    <div>
+                        <label for="password" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Time Period (In Months)</label>
+                        <input type="text" name="time_period" id="timePeriod" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" required />
+                    </div>
+                    <div>
+                        <label for="password" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Interest Rate (in %) *</label>
+                        <input type="text" name="interest_rate" id="interest_rate" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" required />
+                    </div>
+                    <div>
+                        <label for="password" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Loan Amount</label>
+                        <input type="text" name="loan_amount" id="amount" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" required />
+                    </div>
+                    <div>
+                        <label for="password" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Installment Amount *</label>
+                        <input type="text" name="installment_amount" id="Installment_amount" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" required />
+                    </div>
+
+                    <button type="submit" class="text-white bg-rose-400 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-green-600 dark:hover:bg-green-700" style="margin-left: 280px;">Update</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+@endsection
+
+
+@section('footer_part')
+{{-- add_loan --}}
+<script>
+    // const formData = new FormData(loanForm, addLoanSubmit);
+
+
+
+
+    const closeloanFormSubmit = (event) => {
+
+        loanStartDateError.innerHTML = "";
+        loanLoanError.innerHTML = "";
+        loanTime_peroidsError.innerHTML = "";
+        loanInterest_rateError.innerHTML = "";
+        loanAmountError.innerHTML = "";
+        loanInstalmentError.innerHTML = "";
+
+    }
+
+
+    const loanFormSubmit = (event) => {
+        event.preventDefault();
+        error = [];
+        if (!loanStartDate.value) {
+            loanStartDateError.innerHTML = "Start Date is required";
+            error.push(loanStartDateError);
+        }
+
+        if (!loanLoan.value) {
+            loanLoanError.innerHTML = "Loan is required";
+            error.push(loanLoanError);
+        }
+
+        if (!loanTime_peroids.value) {
+            loanTime_peroidsError.innerHTML = "Time Period is required";
+            error.push(loanTime_peroidsError);
+        }
+
+        if (!loanInterest_rate.value) {
+            loanInterest_rateError.innerHTML = "Interest Rate is required";
+            error.push(loanInterest_rateError);
+        }
+
+        if (!loanAmount.value) {
+            loanAmountError.innerHTML = "Amount is required";
+            error.push(loanAmountError);
+        }
+
+        if (!loanInstalment.value) {
+            loanInstalmentError.innerHTML = "Installment is required";
+            error.push(loanInstalmentError);
+        }
+
+
+
+        // const formData = new FormData(loanForm);
+        // const values = Object.fromEntries(formData);;
+
+        // console.log(values);
+
+        if (error.length == 0) {
+            loanForm.submit();
+        }
+    }
+
+    loanForm.addEventListener('input', () => {
+        if (loanStartDate.value) {
+            loanStartDateError.innerHTML = "";
+        }
+
+        if (loanLoan.value) {
+            loanLoanError.innerHTML = "";
+        }
+
+        if (loanTime_peroids.value) {
+            loanTime_peroidsError.innerHTML = "";
+        }
+
+        if (loanInterest_rate.value) {
+            loanInterest_rateError.innerHTML = "";
+        }
+
+        if (loanAmount.value) {
+            loanAmountError.innerHTML = "";
+        }
+
+        if (loanInstalment.value) {
+            loanInstalmentError.innerHTML = "";
+        }
+
+        // console.log(loanInstalment.value);
+    });
+</script>
+
+{{-- loanInstallment --}}
+<script>
+    const loanInstallmentModal = (id) => {
+        loanId.value = id
+        loanInstallmentDateError.innerHTML = "";
+        loanInstallmentAmountError.innerHTML = "";
+    }
+
+    const loanInstallmentFormSubmit = (event) => {
+        event.preventDefault();
+        error = [];
+
+        if (!loanInstallmentDate.value) {
+            loanInstallmentDateError.innerHTML = "Date is Required";
+            error.push(loanInstallmentDateError);
+        }
+
+        if (!loanInstallmentAmount.value) {
+            loanInstallmentAmountError.innerHTML = "Amount is Required";
+            error.push(loanAmountError);
+        }
+
+        // console.log(error);
+
+        if (error.length == 0) {
+            loanInstallmentForm.submit();
+        }
+    }
+
+    loanInstallmentForm.addEventListener('input', () => {
+        if (loanInstallmentDate.value) {
+            loanInstallmentDateError.innerHTML = "";
+        }
+
+        if (loanInstallmentAmount.value) {
+            loanInstallmentAmountError.innerHTML = "";
+        }
+    })
+</script>
+
+{{-- close Loan --}}
+<script>
+    const openModel = (data) => {
+
+        //console.log(data);
+        if (data) {
+
+            id.value = data.id
+            startDate.value = data.start_date
+            amount.value = data.amount
+            loanType.value = data.loan
+            timePeriod.value = data.time_peroids
+            interest_rate.value = data.interest_rate
+
+            Installment_amount.value = data.installment
+
+        } else {
+            startDate.value = '';
+            amount.value = '';
+            loanType.value = '';
+            timePeriod.value = '';
+            interest_rate.value = '';
+            Installment_amount.value = '';
+        }
+    }
+
+
+    const closeLoneModal = (id) => {
+        closeLoneId.value = id
+        closeLoneDateError.innerHTML = "";
+        closeLoneNocError.innerHTML = "";
+    }
+
+    const closeLoneFormSubmit = (event) => {
+        event.preventDefault();
+        error = [];
+
+        if (!closeLoneDate.value) {
+            closeLoneDateError.innerHTML = "Date is Required";
+            error.push(closeLoneDateError);
+        }
+
+        const acceptFileType = ['jpg', 'png', 'pdf', 'jpeg'];
+        let fileType = closeLoneNoc.files[0]?.type.split('/')[1];
+
+        if (!closeLoneNoc.value) {
+            closeLoneNocError.innerHTML = "Noc is Required";
+            error.push(closeLoneNocError);
+        } else if (!acceptFileType.includes(fileType)) {
+            closeLoneNocError.innerHTML = "File type must be Valid";
+            error.push(closeLoneNocError);
+        } else if (closeLoneNoc.files[0].size > 2048000) {
+            closeLoneNocError.innerHTML = "File size exceeds";
+            error.push(closeLoneNocError);
+        }
+
+
+        if (error.length == 0) {
+            closeLoanForm.submit();
+        }
+    }
+</script>
+
+
+
+<script>
+    const isNumber = (event) => {
+        const charCode = (event.which) ? event.which : event.keyCode;
+        if ((charCode > 31 && (charCode < 48 || charCode > 57)) && charCode !== 46) {
+            event.preventDefault();
+        } else {
+            return true;
+        }
+    }
+</script>
+@endsection
