@@ -1,0 +1,204 @@
+<?php
+
+namespace App\Http\Controllers\admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\Attendance;
+use App\Models\User;
+use App\Models\Expenses;
+use App\Models\OfficeExpense;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
+
+use PhpParser\Node\Expr\Cast\String_;
+use Illuminate\Support\Facades\DB;
+
+
+
+
+class DashbordController extends Controller
+{
+    public function index()
+    {
+        $date = Carbon::today();
+        $users = User::whereNot('role_id', 1)->get();
+        $employees = User::whereNot('role_id', 1)
+            ->with([
+                'profile' => function ($query) {
+                    return $query->select('user_id', 'contact_number', 'first_name', 'last_name', 'qualification', 'designation_id')
+                        ->with(['designations' => function ($query1) {
+                            return $query1->select('id', 'designation');
+                        }]);
+                },
+                'attendance' => function ($query3) use ($date) {
+                    return $query3->where('date', $date->format('Y-m-d'))->select('user_id', 'login_at', 'logout_at', 'online')->first();
+                }
+            ])
+            ->select('id', 'uid', 'email', 'status')->get();
+
+
+        //  return $date->format('Y-m-d');
+
+
+
+
+        // $currentDate = Carbon::now()->toDateString();
+        // $totalRecords = Attendance::count();
+        // $attendence = Attendance::whereDate('date', $currentDate)->whereNotNull('login_at')->count();
+        // $percentage = ($totalRecords > 0) ? round(($attendence / $totalRecords) * 100) : 0;
+
+
+        // $absentEmployees = User::whereNotIn('id', $attendence)->get();
+        // $totalRecords = Attendance::whereDate('date', $currentDate)->count();
+        // $absent = ($totalRecords > 0) ? round(($absentEmployees / $totalRecords) * 100) : 0;
+
+        // return $absentEmployees;
+
+
+        $currentDate = Carbon::now()->toDateString();
+        $totalRecords = Attendance::count();
+
+        $attendence = Attendance::whereDate('date', $currentDate)
+            ->whereNotNull('login_at')
+            ->pluck('user_id');
+        $attendenceCount = $attendence->count();
+        $percentage = ($totalRecords > 0) ? round(($attendenceCount / $totalRecords) * 100) : 0;
+
+        $absentEmployees = User::whereNotIn('id', $attendence)->get();
+        $absentCount = $absentEmployees->count();
+        $absentPercentage = ($totalRecords > 0) ? round(($absentCount / $totalRecords) * 100) : 0;
+
+        //return $absentCount;  
+
+        $monthlyAmounts = [];
+
+        for ($month = 01; $month <= 12; $month++) {
+            $monthlyAmount = OfficeExpense::whereMonth('date', $month)
+                ->sum('amount');
+            $monthlyAmounts['data'][$month] = $monthlyAmount;
+            $monthlyAmounts['labels'][$month]  = Carbon::createFromFormat('!m', $month)->format('F');
+        }
+
+        //dd($monthlyAmounts);
+
+        $currentDate = Carbon::now();
+        $officeExpancesSum = OfficeExpense::whereYear('date', $currentDate->format('Y'))
+            ->whereMonth('date', $currentDate->format('m'))
+            ->sum('amount');
+
+
+        $currentDate = Carbon::now();
+
+
+        $allexpense = DB::table('office_expenses')
+            ->join('expenses', 'office_expenses.expance_id', '=', 'expenses.id')
+            ->selectRaw('expenses.expance as expance_name, YEAR(office_expenses.date) as year, MONTH(office_expenses.date) as month, SUM(office_expenses.amount) as total_amount')
+            ->groupBy('expance_name')
+            ->groupByRaw('YEAR(office_expenses.date), MONTH(office_expenses.date)')
+            ->orderBy('expance_name', 'asc')
+            ->orderBy('year', 'asc')
+            ->orderBy('month', 'asc')
+            ->get();
+
+
+        $expenseTypes = ['Patty Cash', 'Bill', 'Rent', 'Sweaper', 'Electricity', 'Office rent'];
+
+        $monthlyExpenses = [];
+
+        for ($month = 1; $month <= 12; $month++) {
+            $monthlyExpenses[$month] = [
+                'labels' => [],
+                'data' => array_fill(0, count($expenseTypes), 0),
+            ];
+
+            foreach ($expenseTypes as $index => $expenseType) {
+                foreach ($allexpense as $expense) {
+                    if ($expense->month == $month && $expense->expance_name == $expenseType) {
+                        $monthlyExpenses[$month]['labels'][] = $expense->expance_name;
+                        $monthlyExpenses[$month]['data'][$index] = $expense->total_amount;
+                    }
+                }
+            }
+        }
+
+        $currentMonth = Carbon::now()->month;
+
+        $categories = ['Electricity', 'Sweaper', 'Office rent', 'Patty Cash'];
+
+        $totalExpensesByCategory = [];
+
+        foreach ($categories as $category) {
+            $total = OfficeExpense::whereHas('expances', function ($query) use ($category) {
+                $query->where('expance', $category);
+            })
+                ->whereMonth('date', $currentMonth)
+                ->sum('amount');
+
+            $totalExpensesByCategory[$category] = $total;
+        }
+
+        $totalExpenses = array_sum($totalExpensesByCategory);
+
+        $percentExpenses = [];
+
+        foreach ($totalExpensesByCategory as $category => $total) {
+            // Calculate the percentage of each category's total
+            $percentExpenses[$category] = ($total / $totalExpenses) * 100;
+        }
+
+
+        $percent = [
+
+            'totalExpensesByCategory' => $totalExpensesByCategory,
+            'percentExpenses' => $percentExpenses
+
+        ];
+
+        //return $percent;
+
+        $data = [
+            'labels' => ['Jan-24', 'Feb-24', 'Mar-24', 'Apr-24', 'May-24', 'Jun-24', 'Jul-24', 'Aug-24', 'Sep-24', 'Oct-24', 'Nov-24', 'Dec-24'],
+            'datasets' => []
+        ];
+
+        foreach ($expenseTypes as $expenseType) {
+            $dataset = [
+                'label' => $expenseType,
+                'backgroundColor' => 'rgba(54, 162, 235, 0.5)',
+                'borderColor' => 'rgba(54, 162, 235, 1)',
+                'borderWidth' => 1,
+                'data' => [],
+            ];
+
+            foreach ($monthlyExpenses as $month => $monthData) {
+                $index = array_search($expenseType, $expenseTypes);
+                $dataset['data'][] = $monthData['data'][$index];
+            }
+
+            $data['datasets'][] = $dataset;
+        }
+
+      
+
+        $barchart = [
+            'labels' => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            'data' => [33, 44, 30, 33, 10, 44, 44, 66, 88, 23, 22, 11],
+        ];
+
+        $piechart = [
+            'labels' => ['Electricity ', 'Office rent', 'Sweeper', 'Category D', 'Category E'],
+            'data' => [33, 30, 15, 10, 20],
+        ];
+
+
+
+        $attendences = [
+            'labels' => ['Absent ', 'Present'],
+            'data' => [$absentPercentage, $percentage],
+        ];
+
+
+
+        return view('admin.welcome', compact('users', 'data', 'monthlyAmounts', 'barchart', 'piechart', 'monthlyExpenses', 'percent', 'attendences', 'employees'));
+    }
+}
